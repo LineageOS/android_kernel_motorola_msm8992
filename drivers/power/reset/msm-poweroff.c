@@ -288,6 +288,8 @@ static void msm_restart_prepare(const char *cmd)
 			qpnp_pon_set_restart_reason(PON_RESTART_REASON_UNKNOWN);
 			__raw_writel(0x77665501, restart_reason);
 		}
+	} else if (in_panic == 1) {
+		qpnp_pon_store_extra_reset_info(RESET_EXTRA_PANIC_REASON, 1);
 	}
 
 	flush_cache_all();
