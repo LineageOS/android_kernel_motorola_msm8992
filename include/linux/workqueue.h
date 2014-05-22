@@ -325,6 +325,9 @@ enum {
  * short queue flush time.  Don't queue works which can run for too
  * long.
  *
+ * system_highpri_wq is similar to system_wq but for work items which
+ * require WQ_HIGHPRI.
+ *
  * system_long_wq is similar to system_wq but may host long running
  * works.  Queue flushing might take relatively long.
  *
@@ -337,6 +340,7 @@ enum {
  * freezable.
  */
 extern struct workqueue_struct *system_wq;
+extern struct workqueue_struct *system_highpri_wq;
 extern struct workqueue_struct *system_long_wq;
 extern struct workqueue_struct *system_unbound_wq;
 extern struct workqueue_struct *system_freezable_wq;
