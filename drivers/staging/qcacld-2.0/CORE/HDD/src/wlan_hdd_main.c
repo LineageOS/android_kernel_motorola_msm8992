@@ -11338,9 +11338,15 @@ int hdd_wlan_startup(struct device *dev, v_VOID_t *hif_sc)
 
    if ( VOS_STATUS_SUCCESS != hdd_update_mac_config( pHddCtx ) )
    {
-      hddLog(VOS_TRACE_LEVEL_WARN,
-             "%s: can't update mac config, using MAC from ini file",
+      hddLog(VOS_TRACE_LEVEL_FATAL,
+             "%s: can't update mac config, using MAC from serial number",
              __func__);
+      if ( VOS_STATUS_SUCCESS != hdd_update_mac_serial( pHddCtx ) )
+      {
+          hddLog(VOS_TRACE_LEVEL_FATAL,
+                 "%s: can't update mac from serial number,  using MAC from ini file",
+                 __func__);
+      }
    }
 
    {

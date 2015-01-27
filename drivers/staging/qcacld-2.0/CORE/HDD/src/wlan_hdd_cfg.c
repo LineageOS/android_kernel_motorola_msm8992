@@ -4990,6 +4990,35 @@ static void update_mac_from_string(hdd_context_t *pHddCtx, tCfgIniEntry *macTabl
    }
 }
 
+static void update_mac_from_serial_string(hdd_context_t *pHddCtx, char *serial_mac_address)
+{
+   int i = 0, j = 0, res = 0;
+   char *candidate = NULL;
+   v_MACADDR_t macaddr;
+
+   memset(&macaddr, 0, sizeof(macaddr));
+
+   candidate = serial_mac_address;
+   for (j = 0; j < VOS_MAC_ADDR_SIZE; j++) {
+       res = hex2bin(&macaddr.bytes[j], &candidate[(j<<1)], 1);
+       if (res < 0)
+           break;
+   }
+   if (res == 0 && !vos_is_macaddr_zero(&macaddr))
+   {
+       for (i = 0; i < VOS_MAX_CONCURRENCY_PERSONA; i++)
+       {
+           vos_mem_copy((v_U8_t *)&pHddCtx->cfg_ini->intfMacAddr[i].bytes[0],
+                        (v_U8_t *)&macaddr.bytes[0], VOS_MAC_ADDR_SIZE);
+           if(i > 0)
+           {
+               pHddCtx->cfg_ini->intfMacAddr[i].bytes[5] += i;
+           }
+           VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_FATAL,"wlan: NIC[%i] %02x%02x%02x%02x%02x%02x\n",i,pHddCtx->cfg_ini->intfMacAddr[i].bytes[0],pHddCtx->cfg_ini->intfMacAddr[i].bytes[1],pHddCtx->cfg_ini->intfMacAddr[i].bytes[2],pHddCtx->cfg_ini->intfMacAddr[i].bytes[3],pHddCtx->cfg_ini->intfMacAddr[i].bytes[4],pHddCtx->cfg_ini->intfMacAddr[i].bytes[5]);
+       }
+   }
+}
+
 /*
  * This function tries to update mac address from cfg file.
  * It overwrites the MAC address if config file exist.
@@ -5075,6 +5104,39 @@ VOS_STATUS hdd_update_mac_config(hdd_context_t *pHddCtx)
                      &pHddCtx->cfg_ini->intfMacAddr[0].bytes[0],
                      sizeof(tSirMacAddr));
    sme_SetCustomMacAddr(customMacAddr);
+
+config_exit:
+   release_firmware(fw);
+   return vos_status;
+}
+
+VOS_STATUS hdd_update_mac_serial(hdd_context_t *pHddCtx)
+{
+   int status;
+   const struct firmware *fw = NULL;
+   char *buffer = NULL;
+
+   VOS_STATUS vos_status = VOS_STATUS_SUCCESS;
+
+   status = request_firmware(&fw, WLAN_MAC_SERIAL_FILE, pHddCtx->parent_dev);
+
+   if (status)
+   {
+      hddLog(VOS_TRACE_LEVEL_FATAL, "%s: request_firmware failed %d\n",
+             __func__, status);
+      vos_status = VOS_STATUS_E_FAILURE;
+      goto config_exit;
+   }
+   if (!fw || !fw->data || !fw->size)
+   {
+      hddLog(VOS_TRACE_LEVEL_FATAL, "%s: invalid firmware\n", __func__);
+      vos_status = VOS_STATUS_E_INVAL;
+      goto config_exit;
+   }
+
+   buffer = (char *)fw->data;
+
+   update_mac_from_serial_string(pHddCtx, buffer);
 
 config_exit:
    release_firmware(fw);

@@ -77,6 +77,7 @@ $(shell mkdir -p $(TARGET_OUT)/lib/modules; \
     ln -sf /system/lib/modules/$(WLAN_CHIPSET)/$(WLAN_CHIPSET)_wlan.ko \
            $(TARGET_OUT)/lib/modules/wlan.ko)
 $(shell ln -sf /persist/wlan_mac.bin $(TARGET_OUT_ETC)/firmware/wlan/qca_cld/wlan_mac.bin)
+$(shell ln -sf /persist/wlan_mac_serial.bin $(TARGET_OUT_ETC)/firmware/wlan/qca_cld/wlan_mac_serial.bin)
 
 ifeq ($(call is-board-platform-in-list, msm8960),true)
 $(shell ln -sf /firmware/image/bdwlan20.bin $(TARGET_OUT_ETC)/firmware/fakeboar.bin)
