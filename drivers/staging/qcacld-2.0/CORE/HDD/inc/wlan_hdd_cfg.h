@@ -4907,6 +4907,9 @@ static __inline unsigned long utilMin( unsigned long a, unsigned long b )
   -------------------------------------------------------------------------*/
 VOS_STATUS hdd_parse_config_ini(hdd_context_t *pHddCtx);
 VOS_STATUS hdd_update_mac_config(hdd_context_t *pHddCtx);
+VOS_STATUS hdd_generate_random_mac_from_serialno(char *serialNo,
+                                            int serialength, char *computedMac);
+VOS_STATUS hdd_update_mac_serial(hdd_context_t *pHddCtx);
 VOS_STATUS hdd_set_sme_config( hdd_context_t *pHddCtx );
 VOS_STATUS hdd_set_sme_chan_list(hdd_context_t *hdd_ctx);
 v_BOOL_t hdd_update_config_dat ( hdd_context_t *pHddCtx );
