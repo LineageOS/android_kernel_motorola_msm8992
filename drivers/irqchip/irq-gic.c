@@ -314,7 +314,7 @@ static void gic_show_resume_irq(struct gic_chip_data *gic)
 		struct irq_desc *desc = irq_to_desc(i + gic->irq_offset);
 		if (desc)
 			desc->wakeup_irqs++;
-		log_wakeup_reason(i + gic->irq_offset);
+		log_base_wakeup_reason(i + gic->irq_offset);
 	}
 }
 
