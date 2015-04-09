@@ -5895,7 +5895,7 @@ VOS_STATUS hdd_update_mac_config(hdd_context_t *pHddCtx)
    macTable[0].value = &buffer_temp[0];
    update_mac_from_string(pHddCtx, &macTable[0], MACADDRESSUSED);
    vos_mem_copy(&customMacAddr,
-                     macTable[0].value,
+                     &pHddCtx->cfg_ini->intfMacAddr[0].bytes[0],
                      sizeof(tSirMacAddr));
 #endif
    sme_SetCustomMacAddr(customMacAddr);
