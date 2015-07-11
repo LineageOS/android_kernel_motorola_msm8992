@@ -24,6 +24,7 @@
 #include <linux/uaccess.h>
 #include <linux/msm_mdp.h>
 
+#include "mdss_livedisplay.h"
 
 #include "mdss_dsi.h"
 #include "mdss_fb.h"
@@ -149,7 +150,7 @@ u32 mdss_dsi_panel_cmd_read(struct mdss_dsi_ctrl_pdata *ctrl, char cmd0,
 	return 0;
 }
 
-static void mdss_dsi_panel_cmds_send(struct mdss_dsi_ctrl_pdata *ctrl,
+void mdss_dsi_panel_cmds_send(struct mdss_dsi_ctrl_pdata *ctrl,
 			struct dsi_panel_cmds *pcmds)
 {
 	struct dcs_cmd_req cmdreq;
@@ -1072,7 +1073,7 @@ static void mdss_dsi_parse_trigger(struct device_node *np, char *trigger,
 }
 
 
-static int mdss_dsi_parse_dcs_cmds(struct device_node *np,
+int mdss_dsi_parse_dcs_cmds(struct device_node *np,
 		struct dsi_panel_cmds *pcmds, char *cmd_key, char *link_key)
 {
 	const char *data;
@@ -2247,6 +2248,8 @@ static int mdss_panel_parse_dt(struct device_node *np,
 
 	if (mdss_panel_parse_param_prop(np, pinfo, ctrl_pdata))
 		pr_err("Error parsing panel parameter properties\n");
+
+	mdss_livedisplay_parse_dt(np, pinfo);
 
 	return 0;
 

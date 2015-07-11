@@ -54,3 +54,4 @@ obj-$(CONFIG_FB_MSM_MDSS) += mdss_fb.o mdss_util.o
 obj-$(CONFIG_COMPAT) += mdss_compat_utils.o
 
 obj-$(CONFIG_MDSS_QUICKDRAW) += mdss_quickdraw.o
+obj-$(CONFIG_FB_MSM_MDSS) += mdss_livedisplay.o
