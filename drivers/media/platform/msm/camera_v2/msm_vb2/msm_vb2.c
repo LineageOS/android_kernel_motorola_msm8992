@@ -348,6 +348,13 @@ static int msm_vb2_buf_done(struct vb2_buffer *vb, int session_id,
 	struct vb2_buffer *vb2_buf = NULL;
 	int rc = 0;
 
+	/*debug sof freeze on front camera*/
+	static unsigned long caller_jiffies;
+
+	if (printk_timed_ratelimit(&caller_jiffies, 1*1000))
+		pr_err("SOF_DEBUG: %s E\n", __func__);
+	/* end of debug*/
+
 	session = msm_get_session(session_id);
 	if (IS_ERR_OR_NULL(session))
 		return 0;
