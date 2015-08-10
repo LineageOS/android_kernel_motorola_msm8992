@@ -6414,9 +6414,6 @@ static int tomtom_codec_enable_slimrx(struct snd_soc_dapm_widget *w,
 						dai->grph);
 		if (!dai->bus_down_in_recovery)
 			ret = tomtom_codec_enable_slim_chmask(dai, false);
-		else
-			pr_debug("%s: bus in recovery skip enable slim_chmask",
-				__func__);
 		if (ret < 0) {
 			ret = wcd9xxx_disconnect_port(core,
 						      &dai->wcd9xxx_ch_list,
@@ -6424,6 +6421,8 @@ static int tomtom_codec_enable_slimrx(struct snd_soc_dapm_widget *w,
 			pr_debug("%s: Disconnect RX port, ret = %d\n",
 				 __func__, ret);
 		}
+
+		dai->bus_down_in_recovery = false;
 		break;
 	}
 	return ret;
@@ -6522,6 +6521,7 @@ static int tomtom_codec_enable_slimvi_feedback(struct snd_soc_dapm_widget *w,
 			snd_soc_update_bits(codec,
 				TOMTOM_A_SPKR2_PROT_EN, 0x88, 0x00);
 		}
+		dai->bus_down_in_recovery = false;
 		break;
 	}
 out_vi:
@@ -6566,6 +6566,8 @@ static int __tomtom_codec_enable_slimtx(struct snd_soc_codec *codec,
 				"%s: Disconnect TX port, ret = %d\n",
 				 __func__, ret);
 		}
+
+		dai_data->bus_down_in_recovery = false;
 		break;
 	}
 
@@ -8065,7 +8067,6 @@ static void tomtom_init_slim_slave_cfg(struct snd_soc_codec *codec)
 
 static int tomtom_device_down(struct wcd9xxx *wcd9xxx)
 {
-	int count;
 	struct snd_soc_codec *codec;
 	struct tomtom_priv *priv;
 
@@ -8075,8 +8076,6 @@ static int tomtom_device_down(struct wcd9xxx *wcd9xxx)
 	snd_soc_card_change_online_state(codec->card, 0);
 	set_bit(BUS_DOWN, &priv->status_mask);
 
-	for (count = 0; count < NUM_CODEC_DAIS; count++)
-		priv->dai[count].bus_down_in_recovery = true;
 	return 0;
 }
 
@@ -8613,6 +8612,7 @@ static int tomtom_post_reset_cb(struct wcd9xxx *wcd9xxx)
 	struct snd_soc_codec *codec;
 	struct tomtom_priv *tomtom;
 	int rco_clk_rate;
+	int count;
 
 	codec = (struct snd_soc_codec *)(wcd9xxx->ssr_priv);
 	tomtom = snd_soc_codec_get_drvdata(codec);
@@ -8666,6 +8666,9 @@ static int tomtom_post_reset_cb(struct wcd9xxx *wcd9xxx)
 	ret = tomtom_setup_irqs(tomtom);
 	if (ret)
 		pr_err("%s: Failed to setup irq: %d\n", __func__, ret);
+
+	for (count = 0; count < NUM_CODEC_DAIS; count++)
+		tomtom->dai[count].bus_down_in_recovery = true;
 
 	/*
 	 * After SSR, the qfuse sensing is lost.
