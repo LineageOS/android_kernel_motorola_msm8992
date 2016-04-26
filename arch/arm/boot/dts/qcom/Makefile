@@ -277,7 +277,9 @@ dtb-$(CONFIG_ARCH_MSM8992) += msm8992-sim.dtb \
 endif # CONFIG_MMI_DEVICE_DTBS
 
 # Motorola DTB definitions
+ifneq ($(CONFIG_ARCH_MSM8992),y)
 dtb-$(CONFIG_ARCH_MSM8994) += msm8994-bunkerhill-p201.dtb
+endif
 
 dtb-$(CONFIG_ARCH_MSM8992) += msm8992-clark-p0.dtb
 dtb-$(CONFIG_ARCH_MSM8992) += msm8992-clark-p1.dtb
@@ -287,6 +289,7 @@ dtb-$(CONFIG_ARCH_MSM8992) += msm8992-clark-p2b.dtb
 dtb-$(CONFIG_ARCH_MSM8992) += msm8992-clark-p2d.dtb
 dtb-$(CONFIG_ARCH_MSM8992) += msm8992-clark-p3b.dtb
 
+ifneq ($(CONFIG_ARCH_MSM8992),y)
 dtb-$(CONFIG_ARCH_MSM8994) += msm8994-kinzie-p1.dtb
 dtb-$(CONFIG_ARCH_MSM8994) += msm8994-kinzie-p1-v2.1.dtb
 dtb-$(CONFIG_ARCH_MSM8994) += msm8994-kinzie-p101.dtb
@@ -295,6 +298,7 @@ dtb-$(CONFIG_ARCH_MSM8994) += msm8994-kinzie-p2b.dtb
 dtb-$(CONFIG_ARCH_MSM8994) += msm8994-kinzie-p2c.dtb
 dtb-$(CONFIG_ARCH_MSM8994) += msm8994-kinzie-p3.dtb
 dtb-$(CONFIG_ARCH_MSM8994) += msm8994-kinzie-p301.dtb
+endif
 
 ifeq ($(CONFIG_MMI_DEVICE_DTBS),y)
 # Add 1k of padding to the DTBs to allow for environment variables
