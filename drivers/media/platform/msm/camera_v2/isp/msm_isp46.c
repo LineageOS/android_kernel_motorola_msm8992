@@ -1,4 +1,4 @@
-/* Copyright (c) 2013-2014, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2013-2015, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -456,7 +456,7 @@ static void msm_vfe46_process_reg_update(struct vfe_device *vfe_dev,
 				(uint32_t)BIT(i));
 			switch (i) {
 			case VFE_PIX_0:
-				for (j = 0; j < MAX_NUM_STREAM; j++) {
+				for (j = 0; j < VFE_AXI_SRC_MAX; j++) {
 					stream_info =
 						&vfe_dev->axi_data.
 							stream_info[j];
@@ -628,18 +628,18 @@ static void msm_vfe46_axi_update_cgc_override(struct vfe_device *vfe_dev,
 	msm_camera_io_w_mb(val, vfe_dev->vfe_base + 0x3C);
 }
 
-static void msm_vfe46_axi_enable_wm(struct vfe_device *vfe_dev,
+static void msm_vfe46_axi_enable_wm(void __iomem *vfe_base,
 	uint8_t wm_idx, uint8_t enable)
 {
 	uint32_t val;
 
-	val = msm_camera_io_r(vfe_dev->vfe_base + VFE46_WM_BASE(wm_idx));
+	val = msm_camera_io_r(vfe_base + VFE46_WM_BASE(wm_idx));
 	if (enable)
 		val |= 0x1;
 	else
 		val &= ~0x1;
 	msm_camera_io_w_mb(val,
-		vfe_dev->vfe_base + VFE46_WM_BASE(wm_idx));
+		vfe_base + VFE46_WM_BASE(wm_idx));
 }
 
 static void msm_vfe46_axi_cfg_comp_mask(struct vfe_device *vfe_dev,

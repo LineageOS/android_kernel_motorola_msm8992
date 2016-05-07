@@ -1,4 +1,4 @@
-/* Copyright (c) 2012-2015, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012-2016, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -1521,9 +1521,6 @@ static int ipa_q6_set_ex_path_dis_agg(void)
 */
 int ipa_q6_cleanup(void)
 {
-	int client_idx;
-	int res;
-
 	ipa_inc_client_enable_clks();
 
 	if (ipa_q6_pipe_delay()) {
@@ -1542,15 +1539,31 @@ int ipa_q6_cleanup(void)
 		IPAERR("Failed to disable aggregation on Q6 pipes\n");
 		BUG();
 	}
+	return 0;
+}
 
+/**
+* ipa_q6_pipe_reset() - A cleanup for the Q6 pipes
+*                    in IPA HW. This is performed in case of SSR.
+*
+* Return codes:
+* 0: success
+* This is a mandatory procedure, in case one of the steps fails, the
+* AP needs to restart.
+*/
+int ipa_q6_pipe_reset(void)
+{
+	int client_idx;
+	int res;
 	/*
 	 * Q6 relies on the AP to reset all Q6 IPA pipes.
 	 * In case the uC is not loaded, or upon any failure in the pipe reset
 	 * sequence, we have to assert.
 	 */
 	if (!ipa_ctx->uc_ctx.uc_loaded) {
-		IPAERR("uC is not loaded, can't reset Q6 pipes\n");
-		BUG();
+		IPAERR("uC is not loaded, won't reset Q6 pipes\n");
+		ipa_dec_client_disable_clks();
+		return 0;
 	}
 
 	for (client_idx = 0; client_idx < IPA_CLIENT_MAX; client_idx++)
@@ -1561,9 +1574,12 @@ int ipa_q6_cleanup(void)
 				BUG();
 		}
 
-	ipa_ctx->q6_proxy_clk_vote_valid = true;
+	/* set proxy vote before decrement */
+	ipa_proxy_clk_vote();
+	ipa_dec_client_disable_clks();
 	return 0;
 }
+
 
 int _ipa_init_sram_v2(void)
 {
@@ -1595,7 +1611,6 @@ int _ipa_init_sram_v2(void)
 	IPA_SRAM_SET(IPA_MEM_PART(v6_rt_ofst), IPA_MEM_CANARY_VAL);
 	IPA_SRAM_SET(IPA_MEM_PART(modem_hdr_ofst), IPA_MEM_CANARY_VAL);
 	IPA_SRAM_SET(IPA_MEM_PART(modem_ofst), IPA_MEM_CANARY_VAL);
-	IPA_SRAM_SET(IPA_MEM_PART(apps_v4_flt_ofst), IPA_MEM_CANARY_VAL);
 	IPA_SRAM_SET(IPA_MEM_PART(uc_info_ofst), IPA_MEM_CANARY_VAL);
 
 	iounmap(ipa_sram_mmio);
@@ -2788,8 +2803,10 @@ static void ipa_sps_process_irq(struct work_struct *work)
 
 	/* process bam irq */
 	ret = sps_bam_process_irq(ipa_ctx->bam_handle);
-	if (ret)
+	if (ret) {
 		IPAERR("sps_process_eot_event failed %d\n", ret);
+		ipa_sps_irq_rx_notify_all();
+	}
 
 	/* release IPA clocks */
 	ipa_sps_process_irq_schedule_rel();
@@ -2896,10 +2913,14 @@ static void sps_event_cb(enum sps_callback_case event, void *param)
 	case SPS_CALLBACK_BAM_RES_REL:
 		ipa_sps_process_irq_schedule_rel();
 		break;
+
+	case SPS_CALLBACK_BAM_POLL:
+		ipa_sps_irq_rx_notify_all();
+		break;
+
 	default:
 		IPADBG("unsupported event %d\n", event);
 	}
-
 	spin_unlock_irqrestore(&ipa_ctx->sps_pm.lock, flags);
 }
 /**

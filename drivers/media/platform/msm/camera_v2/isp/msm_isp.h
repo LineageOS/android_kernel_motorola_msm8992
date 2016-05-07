@@ -121,7 +121,7 @@ struct msm_vfe_irq_ops {
 struct msm_vfe_axi_ops {
 	void (*reload_wm)(struct vfe_device *vfe_dev, void __iomem *vfe_base,
 		uint32_t reload_mask);
-	void (*enable_wm) (struct vfe_device *vfe_dev,
+	void (*enable_wm)(void __iomem *vfe_base,
 		uint8_t wm_idx, uint8_t enable);
 	int32_t (*cfg_io_format) (struct vfe_device *vfe_dev,
 		enum msm_vfe_axi_stream_src stream_src,
@@ -489,7 +489,7 @@ struct msm_vfe_error_info {
 	uint32_t error_mask1;
 	uint32_t violation_status;
 	uint32_t camif_status;
-	uint8_t stream_framedrop_count[MAX_NUM_STREAM];
+	uint8_t stream_framedrop_count[VFE_AXI_SRC_MAX];
 	uint8_t stats_framedrop_count[MSM_ISP_STATS_MAX];
 	uint32_t info_dump_frame_count;
 	uint32_t error_count;
