@@ -1326,6 +1326,7 @@ int sps_connect(struct sps_pipe *h, struct sps_connect *connect)
 		goto exit_err;
 	}
 
+	mutex_lock(&bam->lock);
 	SPS_DBG2("sps:sps_connect: bam %pa src 0x%lx dest 0x%lx mode %s",
 			BAM_ID(bam),
 			connect->source,
@@ -1334,14 +1335,13 @@ int sps_connect(struct sps_pipe *h, struct sps_connect *connect)
 
 	/* Allocate resources for the specified connection */
 	pipe->connect = *connect;
-	mutex_lock(&bam->lock);
 	result = sps_rm_state_change(pipe, SPS_STATE_ALLOCATE);
-	mutex_unlock(&bam->lock);
-	if (result)
+	if (result) {
+		mutex_unlock(&bam->lock);
 		goto exit_err;
+	}
 
 	/* Configure the connection */
-	mutex_lock(&bam->lock);
 	result = sps_rm_state_change(pipe, SPS_STATE_CONNECT);
 	mutex_unlock(&bam->lock);
 	if (result) {
@@ -2196,6 +2196,7 @@ EXPORT_SYMBOL(sps_register_bam_device);
 int sps_deregister_bam_device(unsigned long dev_handle)
 {
 	struct sps_bam *bam;
+	int n;
 
 	SPS_DBG2("sps:%s.", __func__);
 
@@ -2211,6 +2212,12 @@ int sps_deregister_bam_device(unsigned long dev_handle)
 	}
 
 	SPS_DBG2("sps:SPS deregister BAM: phys %pa.", &bam->props.phys_addr);
+
+	if (bam->props.options & SPS_BAM_HOLD_MEM) {
+		for (n = 0; n < BAM_MAX_PIPES; n++)
+			if (bam->desc_cache_pointers[n] != NULL)
+				kfree(bam->desc_cache_pointers[n]);
+	}
 
 	/* If this BAM is attached to a BAM-DMA, init the BAM-DMA device */
 #ifdef CONFIG_SPS_SUPPORT_BAMDMA
@@ -2435,6 +2442,34 @@ int sps_bam_process_irq(unsigned long dev)
 	return ret;
 }
 EXPORT_SYMBOL(sps_bam_process_irq);
+
+/*
+ * Get address info of a BAM
+ */
+int sps_get_bam_addr(unsigned long dev, phys_addr_t *base,
+				u32 *size)
+{
+	struct sps_bam *bam;
+
+	SPS_DBG("sps:%s.", __func__);
+
+	if (!dev) {
+		SPS_ERR("sps:%s:BAM handle is NULL.\n", __func__);
+		return SPS_ERROR;
+	}
+
+	bam = sps_h2bam(dev);
+	if (bam == NULL) {
+		SPS_ERR("sps:%s:BAM is not found by handle.\n", __func__);
+		return SPS_ERROR;
+	}
+
+	*base = bam->props.phys_addr;
+	*size = bam->props.virt_size;
+
+	return 0;
+}
+EXPORT_SYMBOL(sps_get_bam_addr);
 
 /**
  * Allocate client state context
