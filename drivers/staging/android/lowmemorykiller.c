@@ -46,6 +46,7 @@
 #include <linux/cpuset.h>
 #include <linux/show_mem_notifier.h>
 #include <linux/vmpressure.h>
+#include <linux/zcache.h>
 
 #include <trace/events/memkill.h>
 
@@ -140,7 +141,7 @@ static int lmk_vmpressure_notifier(struct notifier_block *nb,
 		return 0;
 
 	if (pressure >= 95) {
-		other_file = global_page_state(NR_FILE_PAGES) -
+		other_file = global_page_state(NR_FILE_PAGES) + zcache_pages() -
 			global_page_state(NR_SHMEM) -
 			total_swapcache_pages();
 		other_free = global_page_state(NR_FREE_PAGES);
@@ -153,7 +154,7 @@ static int lmk_vmpressure_notifier(struct notifier_block *nb,
 		if (lowmem_minfree_size < array_size)
 			array_size = lowmem_minfree_size;
 
-		other_file = global_page_state(NR_FILE_PAGES) -
+		other_file = global_page_state(NR_FILE_PAGES) + zcache_pages() -
 			global_page_state(NR_SHMEM) -
 			total_swapcache_pages();
 
@@ -248,8 +249,9 @@ void tune_lmk_zone_param(struct zonelist *zonelist, int classzone_idx,
 		zone_idx = zonelist_zone_idx(zoneref);
 		za = &zall[node_idx][zone_idx];
 		za->free = zone_page_state(zone, NR_FREE_PAGES);
-		za->file = zone_page_state(zone, NR_FILE_PAGES)
-					- zone_page_state(zone, NR_SHMEM);
+		za->file = zone_page_state(zone, NR_FILE_PAGES) + zcache_pages()
+					- zone_page_state(zone, NR_SHMEM)
+					- zone_page_state(zone, NR_SWAPCACHE);
 		if (zone_idx == ZONE_MOVABLE) {
 			if (!use_cma_pages && other_free) {
 				unsigned long free_cma = zone_page_state(zone,
@@ -437,8 +439,8 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 	other_free = global_page_state(NR_FREE_PAGES);
 
 	if (global_page_state(NR_SHMEM) + total_swapcache_pages() <
-		global_page_state(NR_FILE_PAGES))
-		other_file = global_page_state(NR_FILE_PAGES) -
+		global_page_state(NR_FILE_PAGES) + zcache_pages())
+		other_file = global_page_state(NR_FILE_PAGES) + zcache_pages() -
 						global_page_state(NR_SHMEM) -
 						total_swapcache_pages();
 	else
@@ -578,7 +580,8 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 				"   ION is %ldkB\n" \
 				"   ION_POOL is %ldkB\n" \
 				"   ION_CMA is %ldkB\n" \
-				"   GFP mask is 0x%x\n",
+				"   GFP mask is 0x%x\n" \
+				"   Total zcache is %ldkB\n",
 			     selected->comm, selected->pid,
 			     selected_oom_score_adj,
 			     selected_tasksize * (long)(PAGE_SIZE / 1024),
@@ -610,7 +613,8 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 				(long)(PAGE_SIZE / 1024),
 			     global_page_state(NR_ION_CMA_PAGES) *
 				(long)(PAGE_SIZE / 1024),
-			     sc->gfp_mask);
+			     sc->gfp_mask,
+				(long)zcache_pages() * (long)(PAGE_SIZE / 1024));
 
 		if (lowmem_debug_level >= 2 && selected_oom_score_adj == 0) {
 			show_mem(SHOW_MEM_FILTER_NODES);
@@ -635,8 +639,8 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 		trace_lmk_kill(selected->pid, selected->comm,
 				selected_oom_score_adj, selected_tasksize,
 				min_score_adj, sc->gfp_mask, zinfo);
-		send_sig(SIGKILL, selected, 0);
 		set_tsk_thread_flag(selected, TIF_MEMDIE);
+		send_sig(SIGKILL, selected, 0);
 		rem -= selected_tasksize;
 		rcu_read_unlock();
 		/* give the system time to free up the memory */
