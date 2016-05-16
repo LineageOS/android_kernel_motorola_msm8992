@@ -362,6 +362,7 @@ static void __sync_tlb(struct msm_iommu_drvdata *iommu_drvdata, int ctx,
 		check_tlb_sync_state(iommu_drvdata, ctx, priv);
 }
 
+#ifdef CONFIG_MSM_IOMMU_TLBINVAL_ON_MAP
 static int __flush_iotlb_va(struct iommu_domain *domain, unsigned int va)
 {
 	struct msm_iommu_priv *priv = domain->priv;
@@ -389,6 +390,7 @@ static int __flush_iotlb_va(struct iommu_domain *domain, unsigned int va)
 fail:
 	return ret;
 }
+#endif
 
 static int __flush_iotlb(struct iommu_domain *domain)
 {
@@ -1012,7 +1014,7 @@ static size_t msm_iommu_unmap(struct iommu_domain *domain, unsigned long va,
 	if (ret < 0)
 		goto fail;
 
-	ret = __flush_iotlb_va(domain, va);
+	ret = __flush_iotlb(domain);
 
 	msm_iommu_pagetable_free_tables(&priv->pt, va, len);
 fail:
@@ -1023,8 +1025,8 @@ fail:
 	return len;
 }
 
-static int msm_iommu_map_range(struct iommu_domain *domain, unsigned int va,
-			       struct scatterlist *sg, unsigned int len,
+static int msm_iommu_map_range(struct iommu_domain *domain, unsigned long va,
+			       struct scatterlist *sg, size_t len,
 			       int prot)
 {
 	int ret;
@@ -1052,8 +1054,8 @@ fail:
 }
 
 
-static int msm_iommu_unmap_range(struct iommu_domain *domain, unsigned int va,
-				 unsigned int len)
+static int msm_iommu_unmap_range(struct iommu_domain *domain, unsigned long va,
+				 size_t len)
 {
 	struct msm_iommu_priv *priv;
 
@@ -1067,6 +1069,28 @@ static int msm_iommu_unmap_range(struct iommu_domain *domain, unsigned int va,
 	msm_iommu_pagetable_free_tables(&priv->pt, va, len);
 	mutex_unlock(&msm_iommu_lock);
 	return 0;
+}
+
+static size_t msm_iommu_map_sg(struct iommu_domain *domain, unsigned long va,
+				struct scatterlist *sg, unsigned int nr_entries,
+				int prot)
+{
+	int ret, i;
+	struct scatterlist *tmp;
+	unsigned long len = 0;
+
+	/*
+	 * Longer term work: convert over to generic page table management
+	 * which means we can work on scattergather lists and the whole range
+	 */
+	for_each_sg(sg, tmp, nr_entries, i)
+		len += tmp->length;
+
+	ret = msm_iommu_map_range(domain, va, sg, len, prot);
+	if (ret)
+		return 0;
+	else
+		return len;
 }
 
 #ifdef CONFIG_IOMMU_LPAE
@@ -1545,6 +1569,7 @@ static struct iommu_ops msm_iommu_ops = {
 	.unmap = msm_iommu_unmap,
 	.map_range = msm_iommu_map_range,
 	.unmap_range = msm_iommu_unmap_range,
+	.map_sg = msm_iommu_map_sg,
 	.iova_to_phys = msm_iommu_iova_to_phys,
 	.domain_has_cap = msm_iommu_domain_has_cap,
 	.get_pt_base_addr = msm_iommu_get_pt_base_addr,
