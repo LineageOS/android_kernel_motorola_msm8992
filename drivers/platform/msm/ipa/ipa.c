@@ -3387,6 +3387,7 @@ static int ipa_init(const struct ipa_plat_drv_res *resource_p,
 	if (ipa_ctx->smmu_present)
 		bam_props.options |= SPS_BAM_SMMU_EN;
 	bam_props.ee = resource_p->ee;
+	bam_props.ipc_loglevel = SPS_IPC_LOGLEVEL;
 
 	result = sps_register_bam_device(&bam_props, &ipa_ctx->bam_handle);
 	if (result) {
