@@ -409,8 +409,6 @@ struct mdss_mdp_pp_tear_check {
 	u32 refx100;
 };
 
-struct mdss_livedisplay_ctx;
-
 struct mdss_panel_info {
 	u32 xres;
 	u32 yres;
@@ -495,7 +493,6 @@ struct mdss_panel_info {
 	u32 quickdraw_enabled;
 	bool dynamic_cabc_enabled;
 	enum cabc_mode cabc_mode;
-	struct mdss_livedisplay_ctx *livedisplay;
 
 	/* debugfs structure for the panel */
 	struct mdss_panel_debugfs_info *debugfs_info;
