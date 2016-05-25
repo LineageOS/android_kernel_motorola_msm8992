@@ -1128,21 +1128,22 @@ static int tomtom_config_compander(struct snd_soc_dapm_widget *w,
 	pr_debug("%s: %s event %d compander %d, enabled %d", __func__,
 		 w->name, event, comp, tomtom->comp_enabled[comp]);
 
-	if (!tomtom->comp_enabled[comp])
-		return 0;
-
 	/* Compander 0 has two channels */
 	mask = enable_mask = 0x03;
 	buck_mv = tomtom_codec_get_buck_mv(codec);
 
 	switch (event) {
 	case SND_SOC_DAPM_PRE_PMU:
+		if (!tomtom->comp_enabled[comp])
+			break;
+
 		/* If EAR PA is enabled then compander should not be enabled */
 		if ((snd_soc_read(codec, TOMTOM_A_RX_EAR_EN) & 0x10) != 0) {
 			pr_debug("%s: EAR is enabled, do not enable compander\n",
 				 __func__);
 			break;
 		}
+
 		/* Set compander Sample rate */
 		snd_soc_update_bits(codec,
 				    TOMTOM_A_CDC_COMP0_FS_CFG + (comp * 8),
@@ -1208,6 +1209,10 @@ static int tomtom_config_compander(struct snd_soc_dapm_widget *w,
 
 		/* Set gain source to register */
 		tomtom_config_gain_compander(codec, comp, false);
+		if (comp == COMPANDER_1)
+			snd_soc_update_bits(codec,
+				TOMTOM_A_CDC_COMP0_B4_CTL + (comp * 8),
+				0x80, 0x00);
 		break;
 	}
 	return 0;
@@ -4773,6 +4778,7 @@ static const struct snd_soc_dapm_route audio_map[] = {
 	{"HPHL", NULL, "HPHL_PA_MIXER"},
 	{"HPHL_PA_MIXER", NULL, "HPHL DAC"},
 	{"HPHL DAC", NULL, "RX_BIAS"},
+	{"HPHL DAC", NULL, "COMP1_CLK"},
 
 	{"HPHR", NULL, "HPHR_PA_MIXER"},
 	{"HPHR_PA_MIXER", NULL, "HPHR DAC"},
@@ -4870,7 +4876,6 @@ static const struct snd_soc_dapm_route audio_map[] = {
 
 	{"RX7 MIX1", NULL, "COMP0_CLK"},
 	{"RX8 MIX1", NULL, "COMP0_CLK"},
-	{"RX1 MIX1", NULL, "COMP1_CLK"},
 	{"RX2 MIX1", NULL, "COMP1_CLK"},
 	{"RX3 MIX1", NULL, "COMP2_CLK"},
 	{"RX5 MIX1", NULL, "COMP2_CLK"},
@@ -5408,23 +5413,10 @@ static int tomtom_volatile(struct snd_soc_codec *ssc, unsigned int reg)
 	if (tomtom_is_digital_gain_register(reg))
 		return 1;
 
-	/* HPH status registers */
-	if (reg == TOMTOM_A_RX_HPH_L_STATUS || reg == TOMTOM_A_RX_HPH_R_STATUS)
-		return 1;
-
-	if (reg == TOMTOM_A_MBHC_INSERT_DET_STATUS)
-		return 1;
-
-	if (reg == TOMTOM_A_RX_HPH_CNP_EN)
-		return 1;
-
 	if (((reg >= TOMTOM_A_CDC_SPKR_CLIPDET_VAL0 &&
 	    reg <= TOMTOM_A_CDC_SPKR_CLIPDET_VAL7)) ||
 	    ((reg >= TOMTOM_A_CDC_SPKR2_CLIPDET_VAL0) &&
 	     (reg <= TOMTOM_A_CDC_SPKR2_CLIPDET_VAL7)))
-		return 1;
-
-	if (reg == TOMTOM_A_CDC_VBAT_GAIN_MON_VAL)
 		return 1;
 
 	for (i = 0; i < ARRAY_SIZE(audio_reg_cfg); i++)
@@ -5432,8 +5424,17 @@ static int tomtom_volatile(struct snd_soc_codec *ssc, unsigned int reg)
 		    TOMTOM_REGISTER_START_OFFSET == reg)
 			return 1;
 
-	if (reg == TOMTOM_A_SVASS_SPE_INBOX_TRG)
+	switch (reg) {
+	case TOMTOM_A_RX_HPH_R_STATUS:
+	case TOMTOM_A_RX_HPH_L_STATUS:
+	case TOMTOM_A_MBHC_INSERT_DET_STATUS:
+	case TOMTOM_A_RX_HPH_CNP_EN:
+	case TOMTOM_A_CDC_VBAT_GAIN_MON_VAL:
+	case TOMTOM_A_SVASS_SPE_INBOX_TRG:
+	case TOMTOM_A_BIAS_OSC_BG_CTL:
+	case TOMTOM_A_CLK_BUFF_EN2:
 		return 1;
+	}
 
 	if (reg == TOMTOM_A_QFUSE_STATUS)
 		return 1;

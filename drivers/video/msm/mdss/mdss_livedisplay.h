@@ -18,21 +18,46 @@
 #include <linux/sysfs.h>
 
 #include "mdss_dsi.h"
+#include "mdss_fb.h"
+
+#define MAX_PRESETS 10
 
 struct mdss_livedisplay_ctx {
-	struct dsi_panel_cmds cabc_off_cmd;
-	struct dsi_panel_cmds cabc_ui_cmd;
-	struct dsi_panel_cmds cabc_image_cmd;
-	struct dsi_panel_cmds cabc_video_cmd;
-	struct dsi_panel_cmds cabc_sre_cmd;
-	struct dsi_panel_cmds color_enhance_on_cmd;
-	struct dsi_panel_cmds color_enhance_off_cmd;
+	uint8_t cabc_ui_value;
+	uint8_t cabc_image_value;
+	uint8_t cabc_video_value;
+	uint8_t sre_weak_value;
+	uint8_t sre_medium_value;
+	uint8_t sre_strong_value;
+	uint8_t aco_value;
 
-	unsigned int cabc_mode;
-	bool sre_enabled;
+	const uint8_t *ce_off_cmds;
+	const uint8_t *ce_on_cmds;
+	unsigned int ce_off_cmds_len;
+	unsigned int ce_on_cmds_len;
+
+	const uint8_t *presets[MAX_PRESETS];
+	unsigned int presets_len[MAX_PRESETS];
+
+	const uint8_t *cabc_cmds;
+	unsigned int cabc_cmds_len;
+
+	const uint8_t *post_cmds;
+	unsigned int post_cmds_len;
+
+	unsigned int preset;
+	unsigned int cabc_level;
+	unsigned int sre_level;
+	bool aco_enabled;
 	bool ce_enabled;
 
+	unsigned int link_state;
+
+	unsigned int num_presets;
 	unsigned int caps;
+
+	uint32_t r, g, b;
+	struct msm_fb_data_type *mfd;
 
 	struct mutex lock;
 };
@@ -46,14 +71,40 @@ enum {
 };
 
 enum {
-	MODE_CABC = 1,
-	MODE_SRE = 2,
-	MODE_COLOR_ENHANCE = 4,
-    MODE_UPDATE_ALL = MODE_CABC | MODE_SRE | MODE_COLOR_ENHANCE,
+	SRE_OFF,
+	SRE_WEAK,
+	SRE_MEDIUM,
+	SRE_STRONG,
+	SRE_MAX
+};
+
+enum {
+	MODE_CABC		= 0x01,
+	MODE_SRE		= 0x02,
+	MODE_AUTO_CONTRAST	= 0x04,
+	MODE_COLOR_ENHANCE	= 0x08,
+	MODE_PRESET		= 0x10,
+	MODE_UPDATE_ALL		= 0xFF,
 };
 
 int mdss_livedisplay_update(struct mdss_dsi_ctrl_pdata *ctrl_pdata, int types);
 int mdss_livedisplay_parse_dt(struct device_node *np, struct mdss_panel_info *pinfo);
 int mdss_livedisplay_create_sysfs(struct msm_fb_data_type *mfd);
+
+static inline bool is_cabc_cmd(unsigned int value)
+{
+    return (value & MODE_CABC) || (value & MODE_SRE) || (value & MODE_AUTO_CONTRAST);
+}
+
+static inline struct mdss_livedisplay_ctx* get_ctx(struct msm_fb_data_type *mfd)
+{
+    return mfd->panel_info->livedisplay;
+}
+
+static inline struct mdss_dsi_ctrl_pdata* get_ctrl(struct msm_fb_data_type *mfd)
+{
+    struct mdss_panel_data *pdata = dev_get_platdata(&mfd->pdev->dev);
+    return container_of(pdata, struct mdss_dsi_ctrl_pdata, panel_data);
+}
 
 #endif

@@ -24,12 +24,12 @@
 #include <linux/uaccess.h>
 #include <linux/msm_mdp.h>
 
+#include "mdss_livedisplay.h"
 
 #include "mdss_dsi.h"
 #include "mdss_fb.h"
 #include "mdss_dropbox.h"
 #include "mdss_mdp.h"
-#include "mdss_livedisplay.h"
 
 #define MDSS_PANEL_DEFAULT_VER 0xffffffffffffffff
 #define MDSS_PANEL_UNKNOWN_NAME "unknown"
@@ -875,8 +875,6 @@ static int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
 		}
 	} else
 		panel_recovery_retry = 0;
-
-	mdss_livedisplay_update(ctrl, MODE_UPDATE_ALL);
 
 end:
 	if (dropbox_issue != NULL) {
@@ -2206,6 +2204,9 @@ static int mdss_panel_parse_dt(struct device_node *np,
 					"qcom,mdss-dsi-lp11-init");
 	rc = of_property_read_u32(np, "qcom,mdss-dsi-init-delay-us", &tmp);
 	pinfo->mipi.init_delay = (!rc ? tmp : 0);
+
+	rc = of_property_read_u32(np, "qcom,mdss-dsi-post-init-delay", &tmp);
+	pinfo->mipi.post_init_delay = (!rc ? tmp : 0);
 
 	mdss_dsi_parse_roi_alignment(np, pinfo);
 
