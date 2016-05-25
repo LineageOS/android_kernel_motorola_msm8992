@@ -32,6 +32,7 @@
 #include <asm/cacheflush.h>
 #include <asm/sizes.h>
 
+#include "msm_iommu_pagetable.h"
 #include "msm_iommu_perfmon.h"
 #include "msm_iommu_hw-v1.h"
 #include "msm_iommu_priv.h"
@@ -136,7 +137,9 @@ static int msm_iommu_dump_fault_regs(int smmu_id, int cb_num,
 
 	desc.args[0] = req_info.id = smmu_id;
 	desc.args[1] = req_info.cb_num = cb_num;
-	desc.args[2] = req_info.buff = virt_to_phys(regs);
+	/* virt_to_phys(regs) may be greater than 4GB */
+	req_info.buff = virt_to_phys(regs);
+	desc.args[2] =  virt_to_phys(regs);
 	desc.args[3] = req_info.len = sizeof(*regs);
 	desc.arginfo = SCM_ARGS(4, SCM_VAL, SCM_VAL, SCM_RW, SCM_VAL);
 
@@ -247,6 +250,25 @@ static int msm_iommu_reg_dump_to_regs(
 	return ret;
 }
 
+static void print_iova_to_phys(struct msm_iommu_ctx_drvdata *ctx_drvdata,
+		struct msm_iommu_context_reg ctx_regs[MAX_DUMP_REGS])
+{
+	phys_addr_t pagetable_phys;
+	u64 faulty_iova = 0;
+
+	if (ctx_drvdata->attached_domain &&
+			!ctx_drvdata->secure_context) {
+		faulty_iova = COMBINE_DUMP_REG(
+				ctx_regs[DUMP_REG_FAR1].val,
+				ctx_regs[DUMP_REG_FAR0].val);
+		pagetable_phys = msm_iommu_iova_to_phys_soft(
+					ctx_drvdata->attached_domain,
+					faulty_iova);
+		pr_err("Page table in DDR shows PA = %lx\n",
+					(unsigned long) pagetable_phys);
+	}
+}
+
 irqreturn_t msm_iommu_secure_fault_handler_v2(int irq, void *dev_id)
 {
 	struct platform_device *pdev = dev_id;
@@ -302,7 +324,7 @@ irqreturn_t msm_iommu_secure_fault_handler_v2(int irq, void *dev_id)
 			goto clock_off;
 		}
 
-		if (ctx_regs[DUMP_REG_FSR].val) {
+		if (ctx_regs[DUMP_REG_FSR].val & 0x1FF) {
 			if (tmp)
 				pr_err("Incomplete fault register dump. Printout will be incomplete.\n");
 			if (!ctx_drvdata->attached_domain) {
@@ -326,6 +348,7 @@ irqreturn_t msm_iommu_secure_fault_handler_v2(int irq, void *dev_id)
 					ctx_drvdata->num);
 				pr_err("Interesting registers:\n");
 				print_ctx_regs(ctx_regs);
+				print_iova_to_phys(ctx_drvdata, ctx_regs);
 			}
 		} else {
 			ret = IRQ_NONE;
@@ -428,7 +451,9 @@ static int msm_iommu_sec_ptbl_init(void)
 		goto fail;
 	}
 
-	desc.args[0] = pinit.paddr = (unsigned int)paddr;
+	pinit.paddr = (unsigned int)paddr;
+	/* paddr may be a physical address > 4GB */
+	desc.args[0] = paddr;
 	desc.args[1] = pinit.size = psize[0];
 	desc.args[2] = pinit.spare;
 	desc.arginfo = SCM_ARGS(3, SCM_RW, SCM_VAL, SCM_VAL);
@@ -491,11 +516,7 @@ static int msm_iommu_sec_map2(struct msm_scm_map2_req *map)
 	desc.args[4] = map->info.ctx_id;
 	desc.args[5] = map->info.va;
 	desc.args[6] = map->info.size;
-#ifdef CONFIG_MSM_IOMMU_TLBINVAL_ON_MAP
-	desc.args[7] = map->flags = IOMMU_TLBINVAL_FLAG;
-#else
 	desc.args[7] = map->flags = 0;
-#endif
 	desc.arginfo = SCM_ARGS(8, SCM_RW, SCM_VAL, SCM_VAL, SCM_VAL, SCM_VAL,
 				SCM_VAL, SCM_VAL, SCM_VAL);
 	if (!is_scm_armv8()) {

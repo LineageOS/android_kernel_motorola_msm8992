@@ -1014,8 +1014,9 @@ int mdss_mdp_pp_resume(struct mdss_mdp_ctl *ctl, u32 mixer_num);
 int mdss_mdp_pp_setup(struct mdss_mdp_ctl *ctl);
 int mdss_mdp_pp_setup_locked(struct mdss_mdp_ctl *ctl);
 int mdss_mdp_pipe_pp_setup(struct mdss_mdp_pipe *pipe, u32 *op);
+void mdss_mdp_pipe_pp_clear(struct mdss_mdp_pipe *pipe);
 int mdss_mdp_pipe_sspp_setup(struct mdss_mdp_pipe *pipe, u32 *op);
-void mdss_mdp_pipe_sspp_term(struct mdss_mdp_pipe *pipe);
+
 int mdss_mdp_smp_setup(struct mdss_data_type *mdata, u32 cnt, u32 size);
 
 void mdss_hw_init(struct mdss_data_type *mdata);
@@ -1147,6 +1148,7 @@ int mdss_mdp_cmd_set_autorefresh_mode(struct mdss_mdp_ctl *ctl,
 		int frame_cnt);
 int mdss_mdp_ctl_cmd_autorefresh_enable(struct mdss_mdp_ctl *ctl,
 		int frame_cnt);
+int mdss_mdp_user_pcc_config(struct mdp_pcc_cfg_data *config);
 
 int mdss_mdp_overlay_set(struct msm_fb_data_type *mfd, struct mdp_overlay *req);
 int mdss_mdp_overlay_play(struct msm_fb_data_type *mfd,

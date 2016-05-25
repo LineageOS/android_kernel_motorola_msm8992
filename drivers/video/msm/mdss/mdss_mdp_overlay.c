@@ -916,7 +916,6 @@ int mdss_mdp_overlay_pipe_setup(struct msm_fb_data_type *mfd,
 	pipe->src_fmt = fmt;
 	__mdss_mdp_overlay_set_chroma_sample(pipe);
 
-	pipe->mixer_stage = req->z_order;
 	pipe->is_fg = req->is_fg;
 	pipe->alpha = req->alpha;
 	pipe->transp = req->transp_mask;
@@ -946,7 +945,7 @@ int mdss_mdp_overlay_pipe_setup(struct msm_fb_data_type *mfd,
 	if (pipe->type == MDSS_MDP_PIPE_TYPE_CURSOR)
 		goto cursor_done;
 
-	mdss_mdp_pipe_sspp_term(pipe);
+	mdss_mdp_pipe_pp_clear(pipe);
 	if (pipe->flags & MDP_OVERLAY_PP_CFG_EN) {
 		memcpy(&pipe->pp_cfg, &req->overlay_pp_cfg,
 					sizeof(struct mdp_overlay_pp_params));
@@ -1040,6 +1039,7 @@ int mdss_mdp_overlay_pipe_setup(struct msm_fb_data_type *mfd,
 	}
 
 
+	pipe->mixer_stage = req->z_order;
 	req->id = pipe->ndx;
 
 cursor_done:
@@ -2626,18 +2626,28 @@ static void mdss_mdp_overlay_handle_vsync(struct mdss_mdp_ctl *ctl,
 
 int mdss_mdp_overlay_vsync_ctrl(struct msm_fb_data_type *mfd, int en)
 {
+	struct mdss_overlay_private *mdp5_data = mfd_to_mdp5_data(mfd);
 	struct mdss_mdp_ctl *ctl = mfd_to_ctl(mfd);
 	int rc;
 
 	if (!ctl)
 		return -ENODEV;
-	if (!ctl->ops.add_vsync_handler || !ctl->ops.remove_vsync_handler)
-		return -EOPNOTSUPP;
+
+	mutex_lock(&mdp5_data->ov_lock);
+	if (!ctl->ops.add_vsync_handler || !ctl->ops.remove_vsync_handler) {
+		rc = -EOPNOTSUPP;
+		pr_err_once("fb%d vsync handlers are not registered\n",
+			mfd->index);
+		goto end;
+	}
+
 	if (!ctl->panel_data->panel_info.cont_splash_enabled
-			&& !mdss_mdp_ctl_is_power_on(ctl)) {
-		pr_debug("fb%d vsync pending first update en=%d\n",
-				mfd->index, en);
-		return -EPERM;
+		&& (!mdss_mdp_ctl_is_power_on(ctl) ||
+		mdss_panel_is_power_on_ulp(ctl->power_state))) {
+		pr_debug("fb%d vsync pending first update en=%d, ctl power state:%d\n",
+				mfd->index, en, ctl->power_state);
+		rc = -EPERM;
+		goto end;
 	}
 
 	pr_debug("fb%d vsync en=%d\n", mfd->index, en);
@@ -2649,6 +2659,8 @@ int mdss_mdp_overlay_vsync_ctrl(struct msm_fb_data_type *mfd, int en)
 		rc = ctl->ops.remove_vsync_handler(ctl, &ctl->vsync_handler);
 	mdss_mdp_clk_ctrl(MDP_BLOCK_POWER_OFF);
 
+end:
+	mutex_unlock(&mdp5_data->ov_lock);
 	return rc;
 }
 
@@ -5092,6 +5104,16 @@ static int mdss_mdp_overlay_off(struct msm_fb_data_type *mfd)
 		msleep(vsync_time);
 
 		__vsync_retire_signal(mfd, mdp5_data->retire_cnt);
+
+		/*
+		 * the retire work can still schedule after above retire_signal
+		 * api call. Flush workqueue guarantees that current caller
+		 * context is blocked till retire_work finishes. Any work
+		 * schedule after flush call should not cause any issue because
+		 * retire_signal api checks for retire_cnt with sync_mutex lock.
+		 */
+
+		flush_work(&mdp5_data->retire_work);
 	}
 
 ctl_stop:
