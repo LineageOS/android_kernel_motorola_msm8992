@@ -2052,7 +2052,7 @@ static int select_best_cpu(struct task_struct *p, int target, int reason,
 		sync = 0;
 	}
 
-	if (small_task && !boost) {
+	if (small_task && !boost && !sync) {
 		best_cpu = best_small_task_cpu(p, sync);
 		prefer_idle = 0;	/* For sched_task_load tracepoint */
 		goto done;
@@ -2060,6 +2060,14 @@ static int select_best_cpu(struct task_struct *p, int target, int reason,
 
 	trq = task_rq(p);
 	cpumask_and(&search_cpus, tsk_cpus_allowed(p), cpu_online_mask);
+	if (sync) {
+		unsigned int cpuid = smp_processor_id();
+		if (cpumask_test_cpu(cpuid, &search_cpus)) {
+			best_cpu = cpuid;
+			goto done;
+		}
+	}
+
 	for_each_cpu(i, &search_cpus) {
 		struct rq *rq = cpu_rq(i);
 
@@ -3682,25 +3690,17 @@ static void check_enqueue_throttle(struct cfs_rq *cfs_rq);
 static void
 enqueue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
 {
-	bool renorm = !(flags & ENQUEUE_WAKEUP) || (flags & ENQUEUE_WAKING);
-	bool curr = cfs_rq->curr == se;
-
 	/*
-	 * If we're the current task, we must renormalise before calling
-	 * update_curr().
+	 * Update the normalized vruntime before updating min_vruntime
+	 * through callig update_curr().
 	 */
-	if (renorm && curr)
+	if (!(flags & ENQUEUE_WAKEUP) || (flags & ENQUEUE_WAKING))
 		se->vruntime += cfs_rq->min_vruntime;
 
+	/*
+	 * Update run-time statistics of the 'current'.
+	 */
 	update_curr(cfs_rq);
-
-	/*
-	 * Otherwise, renormalise after, such that we're placed at the current
-	 * moment in time, instead of some random moment in the past.
-	 */
-	if (renorm && !curr)
-		se->vruntime += cfs_rq->min_vruntime;
-
 	enqueue_entity_load_avg(cfs_rq, se, flags & ENQUEUE_WAKEUP);
 	account_entity_enqueue(cfs_rq, se);
 	update_cfs_shares(cfs_rq);
@@ -3712,7 +3712,7 @@ enqueue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
 
 	update_stats_enqueue(cfs_rq, se);
 	check_spread(cfs_rq, se);
-	if (!curr)
+	if (se != cfs_rq->curr)
 		__enqueue_entity(cfs_rq, se);
 	se->on_rq = 1;
 
