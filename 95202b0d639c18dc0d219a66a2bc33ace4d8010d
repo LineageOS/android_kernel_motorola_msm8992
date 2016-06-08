@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "5faad753_529c3c69",
+        "filename": "drivers/media/platform/msm/camera_v2/ispif/msm_ispif.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 1144,
+      "author": {
+        "id": 6351
+      },
+      "writtenOn": "2016-06-08T08:23:47Z",
+      "side": 1,
+      "message": "This merge looks wrong to me.  Looking at caf\u0027s LA.BR.1.2.6_rb1.14 the final code is:\n\n        if (!vfe_info || (vfe_info-\u003enum_vfe \u003c\u003d 0) ||\n                ((uint32_t)(vfe_info-\u003enum_vfe) \u003e ispif-\u003ehw_num_isps)) {\n                pr_err(\"Invalid VFE info: %p %d\\n\", vfe_info,\n                           (vfe_info ? vfe_info-\u003enum_vfe:0));\n                return -EINVAL;\n        }\n\n        memcpy(\u0026ispif-\u003evfe_info, vfe_info, sizeof(struct msm_ispif_vfe_info));\n\n        return 0;",
+      "revId": "95202b0d639c18dc0d219a66a2bc33ace4d8010d",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": false
+    }
+  ]
+}
