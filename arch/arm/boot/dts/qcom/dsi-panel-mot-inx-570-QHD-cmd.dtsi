@@ -169,7 +169,6 @@
 
 		qcom,panel-roi-alignment = <720 720 16 16 0 0>;
 		qcom,partial-update-enabled;
-		qcom,ulps-enabled;
 	};
 
 	mot_inx_570_QHD_1_cmd_v0: qcom,mdss_dsi_mot_inx_570_QHD_dualmipi1_cmd_v0 {
@@ -229,6 +228,5 @@
 
 		qcom,panel-roi-alignment = <720 720 16 16 0 0>;
 		qcom,partial-update-enabled;
-		qcom,ulps-enabled;
 	};
 };
