@@ -22,6 +22,30 @@
       "revId": "6a1ce5fad57d05f174963bfff9768c50ba7dad3e",
       "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3fa7e38b_d08d097c",
+        "filename": "arch/arm64/configs/clark_defconfig",
+        "patchSetId": 1
+      },
+      "lineNbr": 3621,
+      "author": {
+        "id": 3671
+      },
+      "writtenOn": "2016-07-04T12:20:44Z",
+      "side": 0,
+      "message": "right. currently we\u0027re not booting with modules enabled \u003d/",
+      "parentUuid": "3fa7e38b_f03a85cb",
+      "range": {
+        "startLine": 3621,
+        "startChar": 0,
+        "endLine": 3621,
+        "endChar": 21
+      },
+      "revId": "6a1ce5fad57d05f174963bfff9768c50ba7dad3e",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": false
     }
   ]
 }
