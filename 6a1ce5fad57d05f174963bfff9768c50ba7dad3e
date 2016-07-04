@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "3fa7e38b_f03a85cb",
+        "filename": "arch/arm64/configs/clark_defconfig",
+        "patchSetId": 1
+      },
+      "lineNbr": 3621,
+      "author": {
+        "id": 11883
+      },
+      "writtenOn": "2016-07-04T10:54:24Z",
+      "side": 0,
+      "message": "core_ctl must be used as module, it won\u0027t work otherwise",
+      "range": {
+        "startLine": 3621,
+        "startChar": 0,
+        "endLine": 3621,
+        "endChar": 21
+      },
+      "revId": "6a1ce5fad57d05f174963bfff9768c50ba7dad3e",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": false
+    }
+  ]
+}
