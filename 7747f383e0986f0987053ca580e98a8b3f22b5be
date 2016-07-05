@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "3fa7e38b_f6727e11",
+        "filename": "arch/arm64/configs/clark_defconfig",
+        "patchSetId": 1
+      },
+      "lineNbr": 217,
+      "author": {
+        "id": 3671
+      },
+      "writtenOn": "2016-07-05T14:43:20Z",
+      "side": 1,
+      "message": "disable this",
+      "revId": "7747f383e0986f0987053ca580e98a8b3f22b5be",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": false
+    }
+  ]
+}
