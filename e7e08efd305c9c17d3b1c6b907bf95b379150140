@@ -46,6 +46,30 @@
       "revId": "e7e08efd305c9c17d3b1c6b907bf95b379150140",
       "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ff2e2bb8_067321e9",
+        "filename": "drivers/input/touchscreen/synaptics_dsx_i2c.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 11883
+      },
+      "writtenOn": "2016-10-12T18:19:22Z",
+      "side": 0,
+      "message": "Damn",
+      "parentUuid": "ff2e2bb8_86673126",
+      "range": {
+        "startLine": 10,
+        "startChar": 0,
+        "endLine": 10,
+        "endChar": 71
+      },
+      "revId": "e7e08efd305c9c17d3b1c6b907bf95b379150140",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": false
     }
   ]
 }
