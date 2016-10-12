@@ -149,6 +149,11 @@ MODULE_PARM_DESC(id_gnd_threshold, "Threshold for ID GND Voltage");
 #define DWC3_1P8_VOL_MAX		1800000 /* uV */
 #define DWC3_1P8_HPM_LOAD		30000   /* uA */
 
+/* QSCRATCH_GENERAL_CFG register bit offset */
+#define PIPE_UTMI_CLK_SEL	BIT(0)
+#define PIPE3_PHYSTATUS_SW	BIT(3)
+#define PIPE_UTMI_CLK_DIS	BIT(8)
+
 /* TZ SCM parameters */
 #define DWC3_MSM_RESTORE_SCM_CFG_CMD 0x2
 struct dwc3_msm_scm_cmd_buf {
@@ -1215,6 +1220,34 @@ static void dwc3_msm_notify_event(struct dwc3 *dwc, unsigned event)
 	case DWC3_CONTROLLER_POST_RESET_EVENT:
 		dev_dbg(mdwc->dev,
 				"DWC3_CONTROLLER_POST_RESET_EVENT received\n");
+
+		/*
+		 * Below sequence is used when controller is working without
+		 * having ssphy and only USB high speed is supported.
+		 */
+		if (dwc->maximum_speed == USB_SPEED_HIGH) {
+			dwc3_msm_write_reg(mdwc->base, QSCRATCH_GENERAL_CFG,
+				dwc3_msm_read_reg(mdwc->base,
+				QSCRATCH_GENERAL_CFG)
+				| PIPE_UTMI_CLK_DIS);
+
+			usleep_range(2, 5);
+
+
+			dwc3_msm_write_reg(mdwc->base, QSCRATCH_GENERAL_CFG,
+				dwc3_msm_read_reg(mdwc->base,
+				QSCRATCH_GENERAL_CFG)
+				| PIPE_UTMI_CLK_SEL
+				| PIPE3_PHYSTATUS_SW);
+
+			usleep_range(2, 5);
+
+			dwc3_msm_write_reg(mdwc->base, QSCRATCH_GENERAL_CFG,
+				dwc3_msm_read_reg(mdwc->base,
+				QSCRATCH_GENERAL_CFG)
+				& ~PIPE_UTMI_CLK_DIS);
+		}
+
 		/* Re-initialize SSPHY after reset */
 		usb_phy_set_params(mdwc->ss_phy);
 		dwc3_msm_update_ref_clk(mdwc);
@@ -3107,7 +3140,7 @@ unreg_chrdev:
 
 static int dwc3_msm_probe(struct platform_device *pdev)
 {
-	struct device_node *node = pdev->dev.of_node, *dwc3_node;
+	struct device_node *node = pdev->dev.of_node, *dwc3_node, *chosen_node;
 	struct device	*dev = &pdev->dev;
 	struct dwc3_msm *mdwc;
 	struct dwc3	*dwc;
@@ -3275,6 +3308,13 @@ static int dwc3_msm_probe(struct platform_device *pdev)
 		dev_dbg(&pdev->dev, "setting lpm_to_suspend_delay to zero.\n");
 		mdwc->lpm_to_suspend_delay = 0;
 	}
+
+	chosen_node = of_find_node_by_path("/chosen");
+	if (chosen_node) {
+		mdwc->charger.factory_mode = of_property_read_bool(chosen_node,
+						"mmi,factory-cable");
+	}
+	of_node_put(chosen_node);
 
 	if (mdwc->power_collapse) {
 		/*
