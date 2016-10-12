@@ -22,6 +22,30 @@
       "revId": "e7e08efd305c9c17d3b1c6b907bf95b379150140",
       "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ff2e2bb8_86673126",
+        "filename": "drivers/input/touchscreen/synaptics_dsx_i2c.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 3671
+      },
+      "writtenOn": "2016-10-12T18:17:48Z",
+      "side": 0,
+      "message": "*sigh*\n\nhttps://github.com/MotorolaMobilityLLC/kernel-msm/commit/b2756fec46ae6fedc381a20a4aecb27ad188f76e",
+      "parentUuid": "ff2e2bb8_46a8891e",
+      "range": {
+        "startLine": 10,
+        "startChar": 0,
+        "endLine": 10,
+        "endChar": 71
+      },
+      "revId": "e7e08efd305c9c17d3b1c6b907bf95b379150140",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": false
     }
   ]
 }
