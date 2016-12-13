@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014, Linux Foundation. All rights reserved.
+ * Copyright (c) 2013-2014, 2017 Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -405,7 +405,7 @@ static int msm_cpe_lab_thread(void *data)
 				next_buf = &lab->pcm_buf[buf_count + 1];
 				buf_count++;
 			}
-			pr_debug("%s: Cur buf = %p Next Buf = %p\n"
+			pr_debug("%s: Cur buf = %pK Next Buf = %pK\n"
 				 " buf count = 0x%x\n",
 				 __func__, cur_buf, next_buf, buf_count);
 		} else {
@@ -792,13 +792,6 @@ static int msm_cpe_lsm_ioctl_shared(struct snd_pcm_substream *substream,
 		dev_dbg(rtd->dev,
 			"%s: %s\n",
 			__func__, "SNDRV_LSM_REG_SND_MODEL_V2");
-		if (!arg) {
-			dev_err(rtd->dev,
-				"%s: Invalid argument to ioctl %s\n",
-				__func__,
-				"SNDRV_LSM_REG_SND_MODEL_V2");
-			return -EINVAL;
-		}
 
 		memcpy(&snd_model, arg,
 			sizeof(struct snd_lsm_sound_model_v2));
@@ -821,6 +814,7 @@ static int msm_cpe_lsm_ioctl_shared(struct snd_pcm_substream *substream,
 			dev_err(rtd->dev, "%s: No memory for sound model\n",
 				__func__);
 			kfree(session->conf_levels);
+			session->conf_levels = NULL;
 			return -ENOMEM;
 		}
 		session->snd_model_size = snd_model.data_size;
@@ -832,6 +826,8 @@ static int msm_cpe_lsm_ioctl_shared(struct snd_pcm_substream *substream,
 				__func__);
 			kfree(session->conf_levels);
 			kfree(session->snd_model_data);
+			session->conf_levels = NULL;
+			session->snd_model_data = NULL;
 			return -EFAULT;
 		}
 
@@ -843,6 +839,8 @@ static int msm_cpe_lsm_ioctl_shared(struct snd_pcm_substream *substream,
 			       __func__, rc);
 			kfree(session->snd_model_data);
 			kfree(session->conf_levels);
+			session->snd_model_data = NULL;
+			session->conf_levels = NULL;
 			return rc;
 		}
 
@@ -856,6 +854,8 @@ static int msm_cpe_lsm_ioctl_shared(struct snd_pcm_substream *substream,
 			lsm_ops->lsm_shmem_dealloc(cpe->core_handle, session);
 			kfree(session->snd_model_data);
 			kfree(session->conf_levels);
+			session->snd_model_data = NULL;
+			session->conf_levels = NULL;
 			return rc;
 		}
 
@@ -918,13 +918,6 @@ static int msm_cpe_lsm_ioctl_shared(struct snd_pcm_substream *substream,
 		dev_dbg(rtd->dev,
 			"%s: %s\n",
 			__func__, "SNDRV_LSM_EVENT_STATUS");
-		if (!arg) {
-			dev_err(rtd->dev,
-				"%s: Invalid argument to ioctl %s\n",
-				__func__,
-				"SNDRV_LSM_EVENT_STATUS");
-			return -EINVAL;
-		}
 
 		user = arg;
 
@@ -1027,12 +1020,6 @@ static int msm_cpe_lsm_ioctl_shared(struct snd_pcm_substream *substream,
 		break;
 
 	case SNDRV_LSM_SET_PARAMS:
-		if (!arg) {
-			dev_err(rtd->dev,
-				"%s: %s Invalid argument\n",
-				__func__, "SNDRV_LSM_SET_PARAMS");
-			return -EINVAL;
-		}
 		memcpy(&det_params, arg,
 			sizeof(det_params));
 		if (det_params.num_confidence_levels <= 0) {
@@ -1091,7 +1078,7 @@ static int msm_cpe_lsm_lab_start(struct snd_pcm_substream *substream,
 	struct wcd_cpe_lsm_ops *lsm_ops;
 
 	if (!substream || !substream->private_data) {
-		pr_err("%s: invalid substream (%p)\n",
+		pr_err("%s: invalid substream (%pK)\n",
 			__func__, substream);
 		return -EINVAL;
 	}
@@ -1165,7 +1152,7 @@ static int msm_cpe_lsm_ioctl(struct snd_pcm_substream *substream,
 	struct wcd_cpe_lsm_ops *lsm_ops;
 
 	if (!substream || !substream->private_data) {
-		pr_err("%s: invalid substream (%p)\n",
+		pr_err("%s: invalid substream (%pK)\n",
 			__func__, substream);
 		return -EINVAL;
 	}
@@ -1286,12 +1273,6 @@ done:
 }
 
 #ifdef CONFIG_COMPAT
-struct snd_lsm_event_status32 {
-	u16 status;
-	u16 payload_size;
-	u8 payload[0];
-};
-
 struct snd_lsm_sound_model_v2_32 {
 	compat_uptr_t data;
 	compat_uptr_t confidence_level;
@@ -1309,8 +1290,6 @@ struct snd_lsm_detection_params_32 {
 };
 
 enum {
-	SNDRV_LSM_EVENT_STATUS32 =
-		_IOW('U', 0x02, struct snd_lsm_event_status32),
 	SNDRV_LSM_REG_SND_MODEL_V2_32 =
 		_IOW('U', 0x07, struct snd_lsm_sound_model_v2_32),
 	SNDRV_LSM_SET_PARAMS32 =
@@ -1329,7 +1308,7 @@ static int msm_cpe_lsm_ioctl_compat(struct snd_pcm_substream *substream,
 	struct wcd_cpe_lsm_ops *lsm_ops;
 
 	if (!substream || !substream->private_data) {
-		pr_err("%s: invalid substream (%p)\n",
+		pr_err("%s: invalid substream (%pK)\n",
 			__func__, substream);
 		return -EINVAL;
 	}
@@ -1397,7 +1376,7 @@ static int msm_cpe_lsm_ioctl_compat(struct snd_pcm_substream *substream,
 				err);
 	}
 		break;
-	case SNDRV_LSM_EVENT_STATUS32: {
+	case SNDRV_LSM_EVENT_STATUS: {
 		struct snd_lsm_event_status *event_status = NULL;
 		struct snd_lsm_event_status u_event_status32;
 		struct snd_lsm_event_status *udata_32 = NULL;
@@ -1429,7 +1408,6 @@ static int msm_cpe_lsm_ioctl_compat(struct snd_pcm_substream *substream,
 		} else {
 			event_status->payload_size =
 				u_event_status32.payload_size;
-			cmd = SNDRV_LSM_EVENT_STATUS;
 			err = msm_cpe_lsm_ioctl_shared(substream,
 						       cmd, event_status);
 			if (err)
@@ -1504,7 +1482,18 @@ static int msm_cpe_lsm_ioctl_compat(struct snd_pcm_substream *substream,
 
 		break;
 	}
-
+	case SNDRV_LSM_REG_SND_MODEL_V2:
+	case SNDRV_LSM_SET_PARAMS:
+		/*
+		 * In ideal cases, the compat_ioctl should never be called
+		 * with the above unlocked ioctl commands. Print error
+		 * and return error if it does.
+		 */
+		dev_err(rtd->dev,
+			"%s: Invalid cmd for compat_ioctl\n",
+			__func__);
+		err = -EINVAL;
+		break;
 	default:
 		err = msm_cpe_lsm_ioctl_shared(substream, cmd, arg);
 		break;
@@ -1761,7 +1750,7 @@ static int msm_cpe_lsm_copy(struct snd_pcm_substream *substream, int a,
 	if (lab_s->buf_idx >= (lab_s->hw_params.period_count))
 		lab_s->buf_idx = 0;
 	pcm_buf = (lab_s->pcm_buf[lab_s->buf_idx].mem);
-	pr_debug("%s: Buf IDX = 0x%x pcm_buf %pa\n",
+	pr_debug("%s: Buf IDX = 0x%x pcm_buf %pK\n",
 			__func__,
 			lab_s->buf_idx,
 			&(lab_s->pcm_buf[lab_s->buf_idx]));
