@@ -1,0 +1,50 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "da87b5cf_6a40e656",
+        "filename": "drivers/usb/gadget/android.c",
+        "patchSetId": 8
+      },
+      "lineNbr": 3402,
+      "author": {
+        "id": 15402
+      },
+      "writtenOn": "2017-06-04T10:07:13Z",
+      "side": 1,
+      "message": "Really?  Without the user\u0027s consent?  So, in conjunction with the selinux policy patch, any untrusted app can perform PC input, potentially without the user knowing?  Or am I missing something?",
+      "range": {
+        "startLine": 3401,
+        "startChar": 0,
+        "endLine": 3402,
+        "endChar": 43
+      },
+      "revId": "d661b0ce06b3051352ae75780572e7b3376b7ea1",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da87b5cf_0a259ac1",
+        "filename": "drivers/usb/gadget/f_hid.c",
+        "patchSetId": 8
+      },
+      "lineNbr": 66,
+      "author": {
+        "id": 15402
+      },
+      "writtenOn": "2017-06-04T10:07:13Z",
+      "side": 1,
+      "message": "This sounds like \"hacky_device_list\" is the wrong solution for the problem",
+      "range": {
+        "startLine": 66,
+        "startChar": 0,
+        "endLine": 66,
+        "endChar": 84
+      },
+      "revId": "d661b0ce06b3051352ae75780572e7b3376b7ea1",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71",
+      "unresolved": false
+    }
+  ]
+}
