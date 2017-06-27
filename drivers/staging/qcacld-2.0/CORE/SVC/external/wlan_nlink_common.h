@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2014-2016 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -38,7 +38,9 @@
 #define WLAN_NLINK_COMMON_H__
 
 #include <linux/netlink.h>
-
+#ifdef QCA_FEATURE_RPS
+#include <linux/if.h>
+#endif
 /*---------------------------------------------------------------------------
  * External Functions
  *-------------------------------------------------------------------------*/
@@ -96,12 +98,21 @@
 #define WLAN_SVC_WLAN_TP_IND        0x109
 #define WLAN_SVC_RPS_ENABLE_IND     0x10A
 #define WLAN_SVC_WLAN_TP_TX_IND     0x10B
+#define WLAN_SVC_WLAN_AUTO_SHUTDOWN_CANCEL_IND 0x10C
+#define WLAN_SVC_WLAN_RADIO_INDEX 0x10D
+#define WLAN_SVC_FW_SHUTDOWN_IND  0x10E
 
 #define WLAN_SVC_MAX_SSID_LEN    32
 #define WLAN_SVC_MAX_BSSID_LEN   6
 #define WLAN_SVC_MAX_STR_LEN     16
 #define WLAN_SVC_MAX_NUM_CHAN    128
 #define WLAN_SVC_COUNTRY_CODE_LEN 3
+
+/*
+ * Maximim number of queues supported by WLAN driver. Setting an upper
+ * limit. Actual number of queues may be smaller than this value.
+ */
+#define WLAN_SVC_IFACE_NUM_QUEUES 6
 
 // Event data for WLAN_BTC_QUERY_STATE_RSP & WLAN_STA_ASSOC_DONE_IND
 typedef struct
@@ -131,6 +142,18 @@ typedef struct sAniHdr {
    unsigned short length;
 } tAniHdr, tAniMsgHdr;
 
+typedef struct sAniNlMsg {
+    struct  nlmsghdr nlh;             // Netlink Header
+    int radio;                        // unit number of the radio
+    tAniHdr wmsg;                     // Airgo Message Header
+} tAniNlHdr;
+
+struct radio_index_tlv {
+    unsigned short type;
+    unsigned short length;
+    int radio;
+};
+
 struct wlan_status_data {
    uint8_t lpss_support;
    uint8_t is_on;
@@ -154,6 +177,25 @@ struct wlan_version_data {
    char host_version[WLAN_SVC_MAX_STR_LEN];
    char fw_version[WLAN_SVC_MAX_STR_LEN];
 };
+
+#ifdef QCA_FEATURE_RPS
+/**
+ * struct wlan_rps_data - structure to send RPS info to cnss-daemon
+ * @ifname:         interface name for which the RPS data belongs to
+ * @num_queues:     number of rx queues for which RPS data is being sent
+ * @cpu_map_list:   array of cpu maps for different rx queues supported by
+ *                  the wlan driver
+ *
+ * The structure specifies the format of data exchanged between wlan
+ * driver and cnss-daemon. On receipt of the data, cnss-daemon is expected
+ * to apply the 'cpu_map' for each rx queue belonging to the interface 'ifname'
+ */
+struct wlan_rps_data {
+	char ifname[IFNAMSIZ];
+	uint16_t num_queues;
+	uint16_t cpu_map_list[WLAN_SVC_IFACE_NUM_QUEUES];
+};
+#endif
 
 struct wlan_dfs_info {
    uint16_t channel;

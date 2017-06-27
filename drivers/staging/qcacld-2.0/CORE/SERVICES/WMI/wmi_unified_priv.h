@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2013-2016 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -38,7 +38,7 @@
 #include "adf_os_atomic.h"
 
 #define WMI_UNIFIED_MAX_EVENT 0x100
-#define WMI_MAX_CMDS  1024
+#define WMI_MAX_CMDS  256
 
 typedef adf_nbuf_t wmi_buf_t;
 
@@ -95,6 +95,7 @@ struct wmi_unified {
 	adf_os_atomic_t runtime_pm_inprogress;
 #endif
 	bool tgt_force_assert_enable;
+	A_BOOL tag_crash_inject;
 	void (*wma_wow_tx_complete_cbk)(ol_scn_t scn_handle);
 };
 #endif
