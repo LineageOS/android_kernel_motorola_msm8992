@@ -68,6 +68,7 @@
 		qcom,mdss-dsi-te-dcs-command = <1>;
 		qcom,mdss-dsi-te-check-enable;
 		qcom,mdss-dsi-te-using-te-pin;
+		qcom,ulps-enabled;
 		qcom,mdss-dsi-on-command = [
 			/* Setting VBP=8 and VFP=8 */
 			39 01 00 00 00 00 04 3B 03 08 08
